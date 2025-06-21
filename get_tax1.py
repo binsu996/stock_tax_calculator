@@ -13,7 +13,7 @@ def process_item(holdings,trade):
     symbol = str(trade['股票代码'])
     side = trade['买卖方向']
     qty = trade['数量'] if side=="OrderSide.Buy" else -trade['数量']
-    price = trade['成交金额']
+    price = trade['成交价格']
     fee = trade['合计手续费']
     currency = trade['结算币种']
     trade_time = trade['交易时间']
@@ -29,29 +29,28 @@ def process_item(holdings,trade):
 
     if qty>0:
         if cur_qty<0:
+            # 回补
             qty1=min(qty,abs(cur_qty))
-            total_buy_cost=hold["total_fee"]+abs(qty1/qty)*fee+qty1*price
+            total_buy_cost=qty1/abs(cur_qty)*hold["total_fee"]+fee*qty1/qty+qty1*price
             earn=qty1*hold["avg_cost"]-total_buy_cost
-            if qty1==abs(cur_qty):
-                records.append({
-                    "配对原因":"做空了结",
-                    "股票代码":symbol,
-                    "卖出价格":hold["avg_cost"],
-                    "成本价":total_buy_cost/qty1,
-                    "数量":qty1,
-                    "利润":earn,
-                    "时间":trade_time,
-                    "结算币种":currency
-                })
-            delta_qty=qty-abs(cur_qty)
-            hold["quantity"]=delta_qty
-            if delta_qty>0:
-                hold["total_fee"]=delta_qty/qty*fee
-                hold["price"]=price
+            records.append({
+                "配对原因":"做空了结",
+                "股票代码":symbol,
+                "卖出价格":hold["avg_cost"],
+                "成本价":total_buy_cost/qty1,
+                "数量":qty1,
+                "利润":earn,
+                "时间":trade_time,
+                "结算币种":currency
+            })
+            if qty<abs(cur_qty):
+                hold["quantity"]+=qty
+                hold["total_fee"]*=(1-qty/abs(cur_qty))
             else:
-                cur_qty-=abs(qty)
-                hold["avg_cost"]=0 if cur_qty==0 else (abs(qty)*hold["avg_cost"]-total_buy_cost)/abs(cur_qty)
-                hold["total_fee"]=0
+                delta_qty=qty-abs(cur_qty)
+                hold["quantity"]=delta_qty
+                hold["avg_cost"]=price
+                hold["total_fee"]=fee/qty*delta_qty
         else:
             total_buy_cost=hold["avg_cost"]*hold["quantity"]+qty*price
             hold["avg_cost"]=total_buy_cost/(qty+hold["quantity"])
@@ -60,35 +59,32 @@ def process_item(holdings,trade):
 
     if qty<0:
         if cur_qty>0:
-            qty1=min(abs(qty),cur_qty)
-            total_buy_cost=hold["total_fee"]+abs(qty1/qty)*fee+cur_qty*hold["avg_cost"]
+            qty1=min(abs(qty),abs(cur_qty))
+            total_buy_cost=qty1/abs(cur_qty)*hold["total_fee"]+fee*qty1/abs(qty)+qty1*hold["avg_cost"]
             earn=abs(qty1)*price-total_buy_cost
-            if qty1==cur_qty:
-                records.append({
-                    "配对原因":"做多了结",
-                    "股票代码":symbol,
-                    "卖出价格":price,
-                    "成本价":total_buy_cost/qty1,
-                    "数量":abs(qty1),
-                    "利润":earn,
-                    "时间":trade_time,
-                    "结算币种":currency
-                })
-            delta_qty=cur_qty-abs(qty)
-            hold["quantity"]=delta_qty
-            if delta_qty<0:
-                hold["total_fee"]=(abs(delta_qty)/abs(qty))*fee
-                hold["avg_cost"]=price
+            records.append({
+                "配对原因":"做多了结",
+                "股票代码":symbol,
+                "卖出价格":price,
+                "成本价":total_buy_cost/qty1,
+                "数量":abs(qty1),
+                "利润":earn,
+                "时间":trade_time,
+                "结算币种":currency
+            })
+            if qty<abs(cur_qty):
+                hold["quantity"]+=qty
+                hold["total_fee"]*=(1-abs(qty)/cur_qty)
             else:
-                cur_qty-=abs(qty)
-                hold["avg_cost"]=0 if cur_qty==0 else (total_buy_cost-abs(qty)*price)/cur_qty
-                hold["total_fee"]=0
+                delta_qty=abs(cur_qty)-qty
+                hold["quantity"]=delta_qty
+                hold["avg_cost"]=price
+                hold["total_fee"]=fee/abs(qty)*delta_qty
         else:
             total_sell_cost=hold["avg_cost"]*abs(hold["quantity"])+abs(qty)*price
             hold["avg_cost"]=total_sell_cost/(abs(qty)+abs(hold["quantity"]))
             hold["quantity"]+=qty
             hold["total_fee"]+=fee
-
     return records
 
 def summary_year(all_profits,save_path):
@@ -123,8 +119,8 @@ def summary_year(all_profits,save_path):
     df_result.to_csv(save_path, index=False, encoding='utf-8-sig')
 
     
-def main():
-    df = pd.read_csv('data/longbridge_history.csv')
+def main(platform='longbridge'):
+    df = pd.read_csv(f'data/{platform}_history.csv')
     # 按照秒级时间排序
     df['交易时间'] = pd.to_datetime(df['交易时间'])
     df['年份'] = df['交易时间'].dt.strftime('%Y')
@@ -134,13 +130,14 @@ def main():
     holdings = defaultdict(lambda: {'quantity': 0.0, 'avg_cost': 0.0,'total_fee':0})
     for _, trade in df.iterrows():
         if cur_year is not None and trade["年份"]!=cur_year:
-            summary_year(all_profits,f"data/longbridge_method2_profit_{cur_year}.csv")
+            summary_year(all_profits,f"data/{platform}_method1_profit_{cur_year}.csv")
             all_profits = []
         cur_year=trade["年份"]
         profit=process_item(holdings,trade)
         all_profits.extend(profit)
-    
-    summary_year(all_profits,f"data/longbridge_method2_profit_{cur_year}.csv")
+    summary_year(all_profits,f"data/{platform}_method1_profit_{cur_year}.csv")
 
 if __name__ == '__main__':
-    main() 
+    import sys
+    platform = sys.argv[1] if len(sys.argv) > 1 else 'longbridge'
+    main(platform) 
