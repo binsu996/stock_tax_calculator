@@ -1,75 +1,88 @@
-# 股票税务计算器
+[中文说明见此](README_zh.md)
 
-为了应对CRS监管，合理报税，本项目旨在利用量化API自动获取各个平台的股票交易记录并计算不同方式下的盈利，以方便作为报税依据。
-现在已经支持**富途牛牛**和**长桥**，使用前请自行开通相关平台的API并准备好密钥和网关程序。
+# Stock Tax Calculator
 
-## 功能简介
-- 自动获取股票交易流水、资金流水
-- 支持多种配对方式（如FIFO、加权等）计算年度盈利
-- 按年度、平台、币种、方式等多维度汇总利润，辅助报税
+To comply with CRS regulations and facilitate tax reporting, this project leverages quantitative APIs to automatically fetch stock trading records from multiple platforms and calculate profits under different matching methods, providing a reliable basis for tax declaration.
+Currently, **Futu** and **Longbridge** are supported. Please make sure to enable the relevant platform APIs and prepare the required keys and gateway programs before use.
 
-## 支持平台
-- 富途牛牛（Futu）
-- 长桥（Longbridge）
+## Features
+- Automatically fetch stock trading and cash flow records
+- Support multiple matching methods (e.g., FIFO, weighted average, moving weighted average) for annual profit calculation
+- Summarize profits by year, platform, currency, method, etc., to assist with tax reporting
 
-## 主要文件说明
-- `get_tax1.py`(加权平均法)、`get_tax2.py`(移动加权平均法)：不同配对方式的税务计算脚本
-- `data/`：存放各平台流水、利润明细、年度汇总等csv文件
+## Supported Platforms
+- Futu
+- Longbridge
 
-## 各平台数据下载流程
+## Main Files
+- `get_tax1.py` (Weighted Average Method), `get_tax2.py` (Moving Weighted Average Method): Tax calculation scripts for different matching methods
+- `data/`: Stores transaction records, profit details, annual summary CSVs, etc.
 
-### 富途牛牛（Futu）
-1. **API准备**：
-   - 安装富途OpenD网关并启动，确保本地11111端口可用。
-   - 参考[富途OpenAPI文档](https://openapi.futunn.com/)获取API密钥。
-2. **下载交易流水**：
-   - 运行 `futu/download.py`，自动批量下载所有账户的历史订单，生成 `data/futu_history_raw.csv`。
-3. **格式转换**：
-   - 运行 `futu/export.py`，将原始数据转换为标准格式，生成 `data/futu_history.csv`。
-4. **生成年度利润明细**：
-   - 运行 `get_tax1.py`、`get_tax2.py`，自动生成 `data/futu_method1_profit_年份.csv`、`data/futu_method2_profit_年份.csv` 等文件。
+## Data Download Process for Each Platform
 
-### 长桥（Longbridge）
-1. **API准备**：
-   - 注册并开通长桥OpenAPI，获取API密钥。
-   - 配置环境变量或在脚本中填写API密钥。
-2. **下载交易流水**：
-   - 运行 `longbridge/download_trade_flow.py`，自动下载历史订单，生成 `data/longbridge_history.csv`。
-3. **下载资金流水**：
-   - 运行 `longbridge/download_cash_flow.py`，生成 `data/longbridge_cash.csv`。
-4. **生成年度利润明细**：
-   - 运行 `get_tax1.py`、`get_tax2.py`，自动生成 `data/longbridge_method1_profit_年份.csv`、`data/longbridge_method2_profit_年份.csv` 等文件。
+### Futu
+1. **API Preparation:**
+   - Install and start the Futu OpenD gateway, ensuring local port 11111 is available.
+   - Refer to the [Futu OpenAPI documentation](https://openapi.futunn.com/) to obtain your API key.
+2. **Download Trading Records:**
+   - Run `futu/download.py` to batch download all account historical orders, generating `data/futu_history_raw.csv`.
+3. **Format Conversion:**
+   - Run `futu/export.py` to convert the raw data to standard format, generating `data/futu_history.csv`.
+4. **Generate Annual Profit Details:**
+   - Run `get_tax1.py` and `get_tax2.py` to automatically generate files like `data/futu_method1_profit_YEAR.csv`, `data/futu_method2_profit_YEAR.csv`, etc.
 
-## report脚本说明
+### Longbridge
+1. **API Preparation:**
+   - Register and enable Longbridge OpenAPI, and obtain your API key.
+   - Configure environment variables or fill in the API key in the script.
+2. **Download Trading Records:**
+   - Run `longbridge/download_trade_flow.py` to download historical orders, generating `data/longbridge_history.csv`.
+3. **Download Cash Flow:**
+   - Run `longbridge/download_cash_flow.py` to generate `data/longbridge_cash.csv`.
+4. **Generate Annual Profit Details:**
+   - Run `get_tax1.py` and `get_tax2.py` to automatically generate files like `data/longbridge_method1_profit_YEAR.csv`, `data/longbridge_method2_profit_YEAR.csv`, etc.
 
-`report` 脚本用于自动汇总和展示各平台、各方式、各币种、各年度的税务利润数据，便于用户直观查看和后续报税。
-
-### 主要功能
-- 自动遍历 `data/` 目录下所有符合 `$platform_$method_profit_$year.csv` 格式的文件
-- 筛选“配对原因为年度汇总”的条目
-- 按方式（method）分别打印年度税款表
-- 每个表按平台、年份、币种、股票代码分组汇总利润
-- 支持自定义筛选、导出等扩展
-
-### 使用方法
-1. 确保已按前述流程准备好 `data/` 目录下的年度汇总csv文件
-2. 运行：
-   ```bash
-   python report.py
-   ```
-3. 程序会自动输出每种方式下的年度税款表
-
-### 输入说明
-- 需要 `data/` 目录下有如 `futu_method1_profit_2023.csv`、`longbridge_method2_profit_2024.csv` 等文件
-- 文件需包含“配对原因”、“结算币种”、“股票代码”、“利润”等字段
-
-### 输出说明
-- 控制台分别输出每种方式（如method1、method2）下，按平台、年份、币种、股票代码分组的年度利润表
-- 可根据需要修改脚本，筛选特定平台、币种、年份或导出为Excel
+## report Script
 
 ---
 
-安装依赖：
+### Description
+
+The `report` script is used to automatically aggregate and display tax profit data by platform, method, currency, and year, making it easy for users to view and prepare for tax reporting.
+
+#### Main Features
+- Automatically traverse all files in the `data/` directory matching the `$platform_$method_profit_$year.csv` pattern
+- Filter entries where the matching reason is "年度汇总" (annual summary)
+- Print annual tax tables by method
+- Each table summarizes profits by platform, year, currency, and stock code
+- Supports custom filtering and export
+
+#### Usage
+1. Make sure the annual summary CSV files are prepared in the `data/` directory as described above
+2. Run:
+   ```bash
+   python report.py
+   ```
+3. The script will automatically output annual tax tables for each method
+
+#### Input
+- Requires files like `futu_method1_profit_2023.csv`, `longbridge_method2_profit_2024.csv`, etc. in the `data/` directory
+- Files must contain fields such as "配对原因" (matching reason), "结算币种" (settlement currency), "股票代码" (stock code), "利润" (profit), etc.
+
+#### Output
+- The console will output annual profit tables for each method (e.g., method1, method2), grouped by platform, year, currency, and stock code
+- You can modify the script as needed to filter by specific platform, currency, year, or export to Excel
+
+---
+
+## Dependencies
+- Python 3.7+
+- pandas
+
+Install dependencies:
 ```bash
 pip install pandas
 ```
+
+## Issues
+If you have further requirements or questions, feel free to open an issue!
