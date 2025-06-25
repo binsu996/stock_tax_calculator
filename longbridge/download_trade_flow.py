@@ -15,7 +15,7 @@ resp = ctx.history_orders(
 
 pathlib.Path("data").mkdir(exist_ok=True)
 with open("data/longbridge_history.csv",'w') as f:
-    print("股票代码,成交数量,成交价格,买卖方向,币种,手续费,成交时间", file=f)
+    print("股票代码,数量,成交价格,买卖方向,结算币种,合计手续费,交易时间", file=f)
     for x in resp:
         try:
             resp = ctx.order_detail(
