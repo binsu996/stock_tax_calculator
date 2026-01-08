@@ -1,6 +1,7 @@
 from datetime import datetime
 import pandas as pd
 
+
 class Stock:
     def __init__(self, symbol, currency) -> None:
         self.qty = 0                  # 做空 < 0, 做多 > 0
@@ -24,8 +25,6 @@ class Stock:
 
         self.bonus += realized
 
-
-
         # ---- 情况 1：已经是 datetime / Timestamp ----
         if isinstance(updated_at, (datetime, pd.Timestamp)):
             dt = updated_at
@@ -40,8 +39,8 @@ class Stock:
         year = dt.year
         self.bonus_by_year[year] = self.bonus_by_year.get(year, 0.0) + realized
 
-    def buy(self, price, qty, free, updated_at):
-        true_price = price + free / qty
+    def buy(self, price, qty, free, updated_at, shares=1):
+        true_price = price * shares + free / qty
 
         # ---- 先平空 ----
         if self.qty < 0:
@@ -59,8 +58,8 @@ class Stock:
             self.cost += true_price * qty
             self.qty += qty
 
-    def sell(self, price, qty, free, updated_at):
-        true_price = price - free / qty
+    def sell(self, price, qty, free, updated_at, shares=1):
+        true_price = price * shares - free / qty
 
         # ---- 先平多 ----
         if self.qty > 0:
@@ -85,4 +84,23 @@ class Stock:
         # 费用视作负收益
         self._add_bonus(-fee, updated_at)
 
+    def expire_option(self, expiry_date, updated_at):
+        """
+        处理期权失效
+        Args:
+            expiry_date: 期权到期日
+            updated_at: 失效记录时间
+        """
+        if self.qty == 0:
+            return
 
+        # 计算未实现亏损（过期期权价值归0）
+        unrealized_loss = -self.average_price * self.qty
+        self._add_bonus(unrealized_loss, updated_at)
+
+        # 清空持仓
+        self.cost = 0.0
+        self.qty = 0
+
+        print(f"期权失效处理: {self.symbol}, 到期日: {expiry_date.date()}, "
+              f"持仓量: {abs(self.qty)}, 损失: {unrealized_loss:.2f}")

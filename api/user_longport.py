@@ -1,6 +1,5 @@
 from datetime import datetime
 from pickletools import floatnl
-from re import sub
 from token import COLONEQUAL
 from longport.openapi import TradeContext, Config, OrderStatus,OpenApiException,OrderChargeDetail
 import pandas as pd
@@ -9,6 +8,7 @@ from pathlib import Path
 from collections import defaultdict
 import re
 from .trade_type import Stock
+from .utils import parse_option_expiry_from_symbol
 
 def get_public_attributes(obj):
     return [name for name in dir(obj) 
@@ -118,7 +118,6 @@ def get_profile(csv_file_path):
     reader=pd.read_csv(csv_file_path).query("symbol.notnull()")
         
     for _, row in reader.iterrows():
-        print(row)
         symbol = row["symbol"].strip()
         if symbol:  # 忽略 symbol 为空的部分
             balance = float(row["balance"])
@@ -131,14 +130,25 @@ def format_longport_trade(data_path,cash_path=None):
     data=pd.read_csv(data_path).sort_values(by='updated_at', ascending=True)
     data=data[["charge_detail_currency","charge_detail_total_amount","executed_price","executed_quantity","symbol","price","side","quantity","updated_at"]]
     pool={}
+
+    contract_multiplier = {
+        "HKD": 500,  # 港股期权：500股/张
+        "USD": 100,   # 美股期权：100股/张
+    }
+
+   
+
     for _,row in data.iterrows():
         symbol=row["symbol"]
+        expiry_date, is_option = parse_option_expiry_from_symbol(symbol)
+        shares = 1 if not is_option else contract_multiplier[row["charge_detail_currency"]]
+
         if symbol not in pool:
             pool[symbol]=Stock(symbol,row["charge_detail_currency"])
         if row["side"]=="OrderSide.Sell":
-            pool[symbol].sell(row["price"],row["quantity"],row["charge_detail_total_amount"],row["updated_at"])
+            pool[symbol].sell(row["price"],row["quantity"],row["charge_detail_total_amount"],row["updated_at"],shares)
         else:
-            pool[symbol].buy(row["price"],row["quantity"],row["charge_detail_total_amount"],row["updated_at"])
+            pool[symbol].buy(row["price"],row["quantity"],row["charge_detail_total_amount"],row["updated_at"],shares)
     
     
     if cash_path is not None:
