@@ -1,0 +1,5 @@
+dotenv==0.9.9
+futu_api==9.4.5408
+longport==3.0.18
+pandas==2.1.4
+streamlit==1.52.2
