@@ -1,0 +1,6 @@
+data/
+__pycache__
+.cache*
+.env
+akq/
+.DS_Store

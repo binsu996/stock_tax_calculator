@@ -1,0 +1,7 @@
+longport:
+  trade_file: ".cache_data/longbridge_trade.csv"
+  cash_file: ".cache_data/longbridge_cash.csv"
+
+futu:
+  trade_file: ".cache_data/futu_trade.csv"
+  cash_file: ".cache_data/futu_cash.csv"
