@@ -136,7 +136,6 @@ def format_longport_trade(data_path,cash_path=None):
         "USD": 100,   # 美股期权：100股/张
     }
 
-   
 
     for _,row in data.iterrows():
         symbol=row["symbol"]
