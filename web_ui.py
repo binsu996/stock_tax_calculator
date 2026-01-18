@@ -136,9 +136,9 @@ if download_btn_futu:
     st.info("正在下载富途交易流水")
     run_with_output(user_futu.get_trade_flow,
                     ".cache_data/futu_trade.csv", futu_start, futu_end)
-    # st.info("正在下载富途现金流水")
-    # run_with_output(user_futu.get_cash_flow,
-    #                 ".cache_data/futu_cash.csv", futu_start, futu_end)
+    st.info("正在下载富途现金流水")
+    run_with_output(user_futu.get_cash_flow,
+                    ".cache_data/futu_cash.csv", futu_start, futu_end)
     st.info("下载完成 ✅")
 
 if compute_btn:
