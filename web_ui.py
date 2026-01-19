@@ -5,7 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv, set_key
 import os
 from api import user_futu, user_longport
-from api.utils import run_with_output
+from api.utils import run_with_output,safe_read_csv
 import yaml
 
 CONFIG_FILE = Path(".env")
@@ -152,7 +152,9 @@ if compute_btn:
     # Helper: 文件存在且行数 > 0
     def file_has_data(file_path):
         file_path = Path(file_path)
-        return file_path.exists() and len(pd.read_csv(file_path)) > 0
+        return file_path.exists() and len(safe_read_csv(file_path)) > 0
+
+
 
     # LongPort
     if file_has_data(longport_trade_file) and file_has_data(longport_cash_file):

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import time
 from futu import *
 from .trade_type import Stock
-
+from .utils import safe_read_csv
 # 频率限制参数
 MAX_REQUESTS = 20
 TIME_WINDOW = 35  # 秒
@@ -85,7 +85,7 @@ def get_cash_flow(output_path, start_date, end_date):
 
 
 def extract_other_fees(path):
-    df = pd.read_csv(path)
+    df = safe_read_csv(path)
 
     # 统一字符串
     df["cashflow_remark"] = df["cashflow_remark"].fillna("").str.upper()
@@ -253,7 +253,7 @@ def get_trade_flow(output_path, start_date, end_date):
 
 def format_trade(data_path, cash_path=None, check_expiry=True, check_date=None):
     data = (
-        pd.read_csv(data_path)
+        safe_read_csv(data_path)
         .assign(updated_time=lambda df: pd.to_datetime(df["create_time"], errors="coerce"))
         .sort_values(by="updated_time", ascending=True)
     )

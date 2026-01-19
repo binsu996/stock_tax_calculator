@@ -4,6 +4,7 @@ import contextlib
 import streamlit as st
 from datetime import datetime
 import re
+import pandas as pd
 
 class RateLimiter:
     def __init__(self, max_requests, time_window):
@@ -79,3 +80,36 @@ def run_with_output(fn, *args, **kwargs):
     with contextlib.redirect_stdout(logger):
         return fn(*args, **kwargs)
 
+
+
+def safe_read_csv(path, **kwargs):
+    """
+    跨 Windows / Mac / Excel / 券商导出 的安全 CSV 读取
+    """
+
+    encodings = [
+        "utf-8-sig",  # 首选：Windows Excel
+        "utf-8",
+        "gbk",
+        "gb18030"
+    ]
+
+    last_error = None
+
+    for enc in encodings:
+        try:
+            df = pd.read_csv(
+                path,
+                encoding=enc,
+                engine="python",        # 关键：跨平台最稳
+                skip_blank_lines=True,
+                on_bad_lines="skip",    # 防止异常行炸整个文件
+                **kwargs
+            )
+            print(f"CSV loaded with encoding: {enc}")
+            return df
+
+        except Exception as e:
+            last_error = e
+
+    raise RuntimeError(f"无法读取 CSV: {path}\n{last_error}")
